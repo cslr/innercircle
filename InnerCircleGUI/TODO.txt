@@ -3,5 +3,8 @@
 
 2. INSTALLER to check there is Java and install the software with uninstaller. (NSIS installer)
    - copy installer script from Neuromancer NSIS script or Hypercube VST NSIS script.
+   
+3. compile with older eclipse so that binary is compatible with JRE 1.8
+
 
    
