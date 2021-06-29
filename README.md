@@ -1,2 +1,3 @@
 # innercircle
-Inner Circle message and file encryption tool
+Inner Circle is a message and file encryption tool.
+
