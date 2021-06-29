@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>Inner Circle help file</title>
+</head>
+
+<body>
+
+<img src="encrypt.png" align="right">
+
+<h2>Inner Circle help file</h2>
+
+<p>Inner Circle uses AES-256 bit encryption which can be used to encrypt files or text messages. Encrypted data is stored as a Base64 ASCII encoded data. 
+It is meant to encrypt small files and messages as the methods load all file data to memory before processing it.
+
+<h3>File Encryption</h3>
+
+<p>To encrypt files you first select a file to be encrypted and write a passprase and then click the "Encrypt file" button. 
+This generates file in the same direcory with a ".encrypted" extension. The files can be decrypted similarly by selecting crypted file, 
+writing a passphrase and by clicking the "Decrypt file" button.
+
+<h3>Message Encryption</h3>
+
+<p>To encrypt messages you first write a passphrase and then select the "Encrypt message.." button. This will generate ASCII encoded block of data into
+the message box which can be cut'n'pasted and send over insecure channel to the recipient. To decrypt message write the passphrase and 
+select the "Decrypt message.." button. Then cut'n'paste ASCII data block into the window and decipher the message.
+
+<h3>AES-512 Encryption</h3>
+
+<p>The software extends secure AES-256 bit encryption by using it twice to data. This means there are two 256 bit keys which are created using the 
+SHA 512 bit message digest of a passphrase. Encrypted data is also compressed before processing it through encryption algorithms.
+
+<h3>Security</h3>
+
+<p>Encryption algorithm's should give pretty good security but software expects that Operating System is by itself secure. The encryption of files don't delete 
+the original file which should be done through operating system so that it cannot be retrieved anymore (encrypted file system). Additionally, memory can be 
+swapped to disk which may make it possible to read original messages or passphrases. The software doesn't use public key encryption because quantum computers 
+can break RSA and some other public key ciphers while AES-256 (or non-standard AES-512) should be secure as long as passwords are not leaked.
+
+<hr>
+
+<a href="mailto:tomas.ukkonen@iki.fi">tomas.ukkonen@iki.fi</a>.
+
+</body>
+</html>

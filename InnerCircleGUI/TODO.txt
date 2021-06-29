@@ -1,0 +1,7 @@
+
+1. Check compression algorithm doesn't set known values at the beginning of the data stream.
+
+2. INSTALLER to check there is Java and install the software with uninstaller. (NSIS installer)
+   - copy installer script from Neuromancer NSIS script or Hypercube VST NSIS script.
+
+   
