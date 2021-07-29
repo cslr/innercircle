@@ -2,7 +2,7 @@ package fi.novelinsight;
 
 public class InnerCircleModel {
 	
-	public String versionNumber = "v0.901 beta";
+	public String versionNumber = "v0.920 beta";
 	
 	protected String filename = null;
 	protected String passphrase = null;

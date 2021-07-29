@@ -32,6 +32,9 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 	// unhandled messages
 	private ArrayList<String> messages = new ArrayList<String>();
 	
+	Thread encryptingThread = null;
+	Thread decryptingThread = null;
+	
 	public synchronized boolean addMessage(String m) {
 		messages.add(m);
 		return true;
@@ -327,22 +330,78 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 			if(filename == null || passphrase == null) return false;
 			if(filename == "" || passphrase == "") return false;
 			
+			{
+				Thread e = encryptingThread;
+				
+				if(e != null)
+					if(e.isAlive() == true) 
+						return false; // also single encryption task at the time
+				
+			}
+			
 			File file;
 			byte[] fileContent;
 			
 			try {
 				file = new File(filename);
 				fileContent = Files.readAllBytes(file.toPath());
+				
+				addMessage("Starting encryption: " + filename + ".");
 			}
 			catch(Exception e) {
 				addMessage("File encryption failed. Cannot open file: " + filename + ".");
 				System.out.println("Exception: " + e.toString());
 				return false;				 
 			}
+			catch(java.lang.OutOfMemoryError oom) {
+				addMessage("File encryption failed: out of memory error (increase java heap size).");
+				System.out.println("Java Out Of Memory exception: " + oom.toString());
+				
+				return false;
+			}
 			
-			byte[] encryptedBytes = this.encryptBytes(fileContent, passphrase);
+			//byte[] encryptedBytes = this.encryptBytes(fileContent, passphrase);
 			
-			String encryptedFilename = filename + ".encrypted";
+			final String encryptedFilename = filename + ".encrypted";
+			
+			try {
+			
+				encryptingThread = new Thread() {
+					public void run() {
+						try {
+							byte[] encryptedBytes = encryptBytes(fileContent, passphrase);
+							
+							File encryptedFile = new File(encryptedFilename);
+							
+							Files.write(encryptedFile.toPath(), encryptedBytes);
+							
+							addMessage("File " + filename + " encrypted to " + encryptedFilename + ".\n");
+						}
+						catch(Exception ex) {
+							addMessage("File encryption failed. Cannot write file: " + encryptedFilename + ".");
+							System.out.println("Exception: " + ex.toString());
+							
+							encryptingThread = null;
+							return;				 				
+						}
+						catch(java.lang.OutOfMemoryError oom) {
+							addMessage("File encryption failed: out of memory error (increase java heap size).");
+							System.out.println("Java Out Of Memory exception: " + oom.toString());
+							
+							encryptingThread = null;
+							return;
+						}
+					}
+				};
+				
+				encryptingThread.start();
+				
+			}
+			catch(Exception e) {
+				return false;
+			}
+			
+			/*
 			
 			File encryptedFile;
 			
@@ -359,6 +418,8 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 			
 			addMessage("File " + filename + " encrypted to " + encryptedFilename + ".\n");
 			
+			*/
+			
 			return true;
 		}
 		catch(Exception e) {
@@ -371,20 +432,50 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 
 	@Override
 	public boolean encryptionRunning() {
-		// TODO Auto-generated method stub
-		return false;
+		Thread e = encryptingThread;
+		
+		if(e != null)
+			return e.isAlive();
+		else
+			return false; // ended in failure or not started yet
 	}
 
 	@Override
 	public boolean encryptionEnded() {
-		// TODO Auto-generated method stub
+		Thread e = encryptingThread;
+		
+		if(e == null)
+			return true; // ended in failure or not started
+		else {
+			if(e.isAlive() == false) 
+				return true; // stopped normally after encrypting
+		}
+		
 		return false;
 	}
 
 	@Override
 	public boolean stopEncryption() {
-		// TODO Auto-generated method stub
-		return false;
+		Thread e = encryptingThread;
+		
+		if(e == null) return false; // no thread is running
+		
+		try {
+			if(e.isAlive()) {
+				e.interrupt(); // this should stop the thread
+				e.stop();
+				
+				addMessage("Encryption stopped.\n");
+			}
+			else {
+				addMessage("Encryption is already stopped.\n");
+			}
+			
+			return true;
+		}
+		catch(Exception ex) {
+			return false; // unknown failure
+		}
 	}
 
 	@Override
@@ -394,18 +485,92 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 			if(filename == null || passphrase == null) return false;
 			if(filename == "" || passphrase == "") return false;
 			
+			{
+				Thread e = decryptingThread;
+				
+				if(e != null)
+					if(e.isAlive() == true) 
+						return false; // also single decryption task at the time
+				
+			}
+
+			
 			File file;
 			byte[] fileContent;
+			
+			String decryptedFilename2 = "";
 			
 			try {
 				file = new File(filename);
 				fileContent = Files.readAllBytes(file.toPath());
+				
+				addMessage("Starting decryption: " + filename + ".");
+				
+				if(filename.endsWith(".encrypted")) {
+					decryptedFilename2 = filename.substring(0, filename.length() - 10);
+				}
+				else {
+					decryptedFilename2 = filename + ".decrypted";
+				}
+				
 			}
 			catch(Exception e) {
 				addMessage("File decryption failed. Cannot read file: " + filename + ".");
 				System.out.println("Exception: " + e.toString());
 				return false;
 			}
+			catch(java.lang.OutOfMemoryError oom) {
+				addMessage("File decryption failed: out of memory error (increase java heap size).");
+				System.out.println("Java Out Of Memory exception: " + oom.toString());
+				
+				return false;
+			}
+
+			final String decryptedFilename = decryptedFilename2;
+			
+			try {
+				
+				decryptingThread = new Thread() {
+					public void run() {
+						try {
+
+							byte[] decryptedBytes = decryptBytes(fileContent, passphrase);
+							
+							// filename + ".encrypted";
+							File decryptedFile;
+							
+							decryptedFile = new File(decryptedFilename);
+							
+							Files.write(decryptedFile.toPath(), decryptedBytes);
+							
+							addMessage("File " + filename + " decrypted to " + decryptedFilename + ".\n");
+						}
+						catch(Exception ex) {
+							addMessage("File decryption failed. Cannot write file: " + decryptedFilename + ".");
+							System.out.println("Exception: " + ex.toString());
+							
+							decryptingThread = null;
+							return;				 				
+						}
+						catch(java.lang.OutOfMemoryError oom) {
+							addMessage("File encryption failed: out of memory error (increase java heap size).");
+							System.out.println("Java Out Of Memory exception: " + oom.toString());
+							
+							decryptingThread = null;
+							return;
+						}
+					}
+				};
+				
+				decryptingThread.start();
+				
+			}
+			catch(Exception e) {
+				return false;
+			}
+
+			
+			/*
 			
 			byte[] decryptedBytes = this.decryptBytes(fileContent, passphrase);
 			
@@ -432,7 +597,8 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 				return false;
 			}
 			
-			addMessage("File " + filename + " decrypted to " + decryptedFilename + ".\n");
+			*/
+			
 			
 			return true;
 		}
@@ -445,20 +611,50 @@ public class CryptoEngineJava implements CryptoEngineInterface {
 
 	@Override
 	public boolean decryptionRunning() {
-		// TODO Auto-generated method stub
-		return false;
+		Thread e = decryptingThread;
+		
+		if(e != null)
+			return e.isAlive();
+		else
+			return false; // ended in failure or not started yet
 	}
 
 	@Override
 	public boolean decryptionEnded() {
-		// TODO Auto-generated method stub
+		Thread e = decryptingThread;
+		
+		if(e == null)
+			return true; // ended in failure or not started
+		else {
+			if(e.isAlive() == false) 
+				return true; // stopped normally after encrypting
+		}
+		
 		return false;
 	}
 
 	@Override
 	public boolean stopDecryption() {
-		// TODO Auto-generated method stub
-		return false;
+		Thread e = decryptingThread;
+		
+		if(e == null) return false; // no thread is running
+		
+		try {
+			if(e.isAlive()) {
+				e.interrupt(); // this should stop the thread
+				e.stop();
+				
+				addMessage("Decryption stopped.\n");
+			}
+			else {
+				addMessage("Decryption is already stopped.\n");
+			}
+			
+			return true;
+		}
+		catch(Exception ex) {
+			return false; // unknown failure
+		}
 	}
 
 	@Override
